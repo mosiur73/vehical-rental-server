@@ -1,6 +1,5 @@
-Live API Base URL: 
-GitHub Repository: 
-
+Project Name : vehical-rental-server
+Live API Base URL: https://rental-server-sand.vercel.app/
 
 Features
 👥 User Management
@@ -34,28 +33,19 @@ Vehicle auto status update
 
 Technology Stack
 Backend
-
 Node.js
-
 Express.js
-
 TypeScript
-
 PostgreSQL
-
 pg (node-postgres)
-
 JWT Authentication
-
 bcrypt.js
-
 REST API Architecture
 
 Other Tools
-
 Postman
-
 dotenv
+NeonDB
 
 Installation & Setup
 ✔️ 1. Clone the repository

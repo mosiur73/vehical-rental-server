@@ -5,6 +5,6 @@ const router= express.Router()
 
 router.post("/",bookingController.createBooking)
 router.get("/",bookingController.getAllBookings)
-
+router.put("/:bookingId",bookingController.updateBooking )
 
 export const bookingRoute =router;

@@ -19,39 +19,47 @@ import { bookingService } from "./bookings.service";
   }
 };
 
-
-const getAllBookings = async (req: Request, res: Response) => {
+//get all bookings
+const getAllBookings=async (req: Request, res: Response) => {
   try {
-    const user = req.user;
+    const bookings = await bookingService.getAllBookings();
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized: user not found",
-      });
-    }
-
-    const bookings = await bookingService.getAllBookings(user);
-
-    const message =
-      user.role === "admin"
-        ? "Bookings retrieved successfully"
-        : "Your bookings retrieved successfully";
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message,
+      message: "Bookings retrieved successfully",
       data: bookings,
     });
   } catch (error: any) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || "Something went wrong",
+    });
+  }
+};
+
+//update booking
+const updateBooking = async (req: Request, res: Response) => {
+  try {
+    const bookingId = req.params.bookingId as string;
+    const { status } = req.body;
+
+    const updatedBooking = await bookingService.updateBooking(bookingId, status);
+
+    return res.status(200).json({
+      success: true,
+      message: "Booking cancelled successfully",
+      data: updatedBooking,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong",
     });
   }
 };
 
 export const bookingController={
     createBooking,
-    getAllBookings
+    getAllBookings,
+    updateBooking
 }

@@ -1,10 +1,11 @@
 import { pool } from "../../config/db";
 
 
+
 const createBooking = async (payload: any) => {
     const { customer_id, vehicle_id, rent_start_date, rent_end_date } = payload;
 
-    // STEP 1 — Check customer exists
+    //Check customer exists
     const customer = await pool.query(
       `SELECT id FROM users WHERE id=$1`,
       [customer_id]
@@ -14,7 +15,7 @@ const createBooking = async (payload: any) => {
       throw new Error("Customer not found");
     }
 
-    // STEP 2 — Check vehicle exists
+    //Check vehicle exists
     const vehicle = await pool.query(
       `SELECT * FROM vehicles WHERE id=$1`,
       [vehicle_id]
@@ -24,12 +25,12 @@ const createBooking = async (payload: any) => {
       throw new Error("Vehicle not found");
     }
 
-    // STEP 3 — Check availability
+    //Check availability
     if (vehicle.rows[0].availability_status === "booked") {
       throw new Error("Vehicle is already booked");
     }
 
-    // STEP 4 — Calculate total price
+    // Calculate total price
     const start = new Date(rent_start_date);
     const end = new Date(rent_end_date);
 
@@ -42,7 +43,7 @@ const createBooking = async (payload: any) => {
 
     const total_price = numberOfDays * vehicle.rows[0].daily_rent_price;
 
-    // STEP 5 — Insert booking
+    // Insert booking
     const booking = await pool.query(
       `
         INSERT INTO bookings(
@@ -60,7 +61,7 @@ const createBooking = async (payload: any) => {
       ]
     );
 
-    // STEP 6 — Update vehicle availability
+    //Update vehicle availability
     await pool.query(
       `UPDATE vehicles SET availability_status='booked' WHERE id=$1`,
       [vehicle_id]
@@ -79,39 +80,89 @@ const createBooking = async (payload: any) => {
   }
 
 
-  // Get all bookings (role-based)
-const getAllBookings = async (user: any) => {
-  let query, values: any[] | undefined;
-  if (user.role === 'admin') {
-    query = `
-      SELECT b.*, 
-             u.name AS customer_name, u.email AS customer_email,
-             v.vehicle_name, v.registration_number
-      FROM bookings b
-      JOIN users u ON b.customer_id = u.id
-      JOIN vehicles v ON b.vehicle_id = v.id
-      ORDER BY b.id DESC
-    `;
-    values = [];
-  } else {
-    query = `
-      SELECT b.id, b.vehicle_id, b.rent_start_date, b.rent_end_date,
-             b.total_price, b.status,
-             v.vehicle_name, v.registration_number, v.type
-      FROM bookings b
-      JOIN vehicles v ON b.vehicle_id = v.id
-      WHERE b.customer_id = $1
-      ORDER BY b.id DESC
-    `;
-    values = [user.id];
+  // Get all bookings 
+const getAllBookings=async () => {
+  
+  const bookingsResult = await pool.query(`
+    SELECT id, customer_id, vehicle_id, rent_start_date, rent_end_date, 
+           total_price, status
+    FROM bookings
+    ORDER BY id DESC
+  `);
+
+  const bookings = bookingsResult.rows;
+
+  
+  const finalData = [];
+
+  for (const booking of bookings) {
+   
+    const customerRes = await pool.query(
+      `SELECT name, email FROM users WHERE id = $1`,
+      [booking.customer_id]
+    );
+
+    
+    const vehicleRes = await pool.query(
+      `SELECT vehicle_name, registration_number 
+       FROM vehicles WHERE id = $1`,
+      [booking.vehicle_id]
+    );
+
+    finalData.push({
+      ...booking,
+      customer: customerRes.rows[0],
+      vehicle: vehicleRes.rows[0],
+    });
   }
 
-  const result = await pool.query(query, values);
-  return result.rows;
+  return finalData;
 };
+
+
+
+//update booking
+const updateBooking = async (bookingId: string, status: string) => {
+  
+  const bookingData = await pool.query(
+    `SELECT * FROM bookings WHERE id = $1`,
+    [bookingId]
+  );
+
+  if (bookingData.rows.length === 0) {
+    throw new Error("Booking not found");
+  }
+
+  const booking = bookingData.rows[0];
+
+  
+  const updated = await pool.query(
+    `UPDATE bookings 
+     SET status = $1, updated_at = NOW() 
+     WHERE id = $2
+     RETURNING id, customer_id, vehicle_id, rent_start_date, rent_end_date, total_price, status`,
+    [status, bookingId]
+  );
+
+  const updatedBooking = updated.rows[0];
+
+ 
+  if (status === "cancelled") {
+    await pool.query(
+      `UPDATE vehicles 
+       SET availability_status = 'available' 
+       WHERE id = $1`,
+      [booking.vehicle_id]
+    );
+  }
+
+  return updatedBooking;
+};
+
 
 
   export const bookingService={
     createBooking,
-    getAllBookings
+    getAllBookings,
+    updateBooking
   }

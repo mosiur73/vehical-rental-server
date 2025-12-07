@@ -2,7 +2,8 @@ import { pool } from "../../config/db";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-export const secret = "KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30";
+// export const secret = "KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30";
+const secret = process.env.JWT_SECRET as string;
 
 const createUser = async (payload: Record<string, unknown>) => {
   const { name, email, password,phone, role } = payload;

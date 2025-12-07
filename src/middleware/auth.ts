@@ -3,8 +3,9 @@
 
 import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { secret } from "../modules/auth/auth.service";
+// import { secret } from "../modules/auth/auth.service";
 import { pool } from "../config/db";
+const secret = process.env.JWT_SECRET as string;
 
 const auth = (...roles: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
